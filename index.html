@@ -26,6 +26,7 @@
       --word-box-top: 30%;
       --word-box-width: 29%;
       --word-box-height: 17%;
+      --word-box-angle: -7deg;
     }
 
     * {
@@ -112,6 +113,8 @@
       place-items: center;
       overflow: hidden;
       pointer-events: none;
+      transform: rotate(var(--word-box-angle));
+      transform-origin: 50% 50%;
       z-index: 1;
     }
 
