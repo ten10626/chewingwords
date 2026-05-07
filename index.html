@@ -21,11 +21,11 @@
       --gum-width: min(92vw, 680px);
       --gum-max-height: min(72svh, 740px);
 
-      /* Adjust these if the final gum artwork's white area differs. */
-      --word-box-left: 21%;
-      --word-box-top: 38%;
-      --word-box-width: 58%;
-      --word-box-height: 24%;
+      /* Position over the blank white area on the pulled-out gum wrapper. */
+      --word-box-left: 42%;
+      --word-box-top: 30%;
+      --word-box-width: 29%;
+      --word-box-height: 17%;
     }
 
     * {
@@ -112,6 +112,7 @@
       place-items: center;
       overflow: hidden;
       pointer-events: none;
+      z-index: 1;
     }
 
     .gum-image.is-missing ~ .word-window {
