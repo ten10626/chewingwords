@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="description" content="Chewing Words">
+  <meta property="og:title" content="Chewing Words">
+  <meta property="og:type" content="website">
+  <meta property="og:description" content="Tap the gum and get a word.">
+  <title>Chewing Words</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --page-bg: #fff7df;
+      --text: #1d2630;
+      --hint: rgba(29, 38, 48, 0.52);
+      --gum-width: min(92vw, 680px);
+      --gum-max-height: min(72svh, 740px);
+
+      /* Adjust these if the final gum artwork's white area differs. */
+      --word-box-left: 21%;
+      --word-box-top: 38%;
+      --word-box-width: 58%;
+      --word-box-height: 24%;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.72), transparent 34rem),
+        var(--page-bg);
+      color: var(--text);
+      font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    main {
+      width: 100%;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: max(18px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+        max(22px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+      cursor: pointer;
+    }
+
+    .gum-stage {
+      position: relative;
+      width: var(--gum-width);
+      max-height: var(--gum-max-height);
+      display: grid;
+      place-items: center;
+    }
+
+    .gum-image {
+      display: block;
+      width: 100%;
+      max-height: var(--gum-max-height);
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 18px 30px rgba(77, 56, 19, 0.16));
+      pointer-events: none;
+    }
+
+    .gum-fallback {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      min-height: min(54vw, 380px);
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, #ff6b8f 0 13%, #ffe14f 13% 25%, #ffffff 25% 75%, #62d7ff 75% 87%, #ff6b8f 87% 100%);
+      box-shadow: 0 18px 30px rgba(77, 56, 19, 0.16);
+      pointer-events: none;
+    }
+
+    .gum-image.is-missing + .gum-fallback {
+      display: grid;
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2.2 / 1;
+    }
+
+    .word-window {
+      position: absolute;
+      left: var(--word-box-left);
+      top: var(--word-box-top);
+      width: var(--word-box-width);
+      height: var(--word-box-height);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .gum-image.is-missing ~ .word-window {
+      top: 33%;
+      height: 34%;
+    }
+
+    .word {
+      position: absolute;
+      width: 100%;
+      padding: 0 0.08em;
+      text-align: center;
+      color: var(--text);
+      font-size: clamp(1.45rem, 9vw, 4.7rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      text-wrap: nowrap;
+      text-shadow: 0 2px 0 rgba(255, 255, 255, 0.75);
+      will-change: transform, opacity;
+    }
+
+    .word.is-out {
+      animation: slide-out 220ms cubic-bezier(.55, 0, .35, 1) forwards;
+    }
+
+    .word.is-in {
+      animation: slide-in 260ms cubic-bezier(.2, .8, .25, 1) forwards;
+    }
+
+    .status {
+      position: fixed;
+      left: 50%;
+      bottom: max(14px, env(safe-area-inset-bottom));
+      translate: -50% 0;
+      width: min(88vw, 22rem);
+      color: var(--hint);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 180ms ease;
+      pointer-events: none;
+    }
+
+    .status.is-visible {
+      opacity: 1;
+    }
+
+    @keyframes slide-out {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(-112%);
+        opacity: 0;
+      }
+    }
+
+    @keyframes slide-in {
+      from {
+        transform: translateX(112%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 620px) {
+      :root {
+        --gum-width: min(76vw, 720px);
+        --gum-max-height: 84svh;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .word.is-out,
+      .word.is-in {
+        animation-duration: 1ms;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="app" aria-label="Chewing Words. Tap to show the next word.">
+    <section class="gum-stage" aria-live="polite">
+      <img class="gum-image" src="images/gum.png" alt="" draggable="false">
+      <div class="gum-fallback" aria-hidden="true"></div>
+      <div class="word-window" id="wordWindow">
+        <span class="word" id="currentWord">会話</span>
+      </div>
+    </section>
+    <div class="status" id="status">offline words</div>
+  </main>
+
+  <script>
+    const WORD_API_URL = "https://jlpt-vocab-api.vercel.app/api/words/random";
+    const REQUEST_TIMEOUT_MS = 4500;
+    const FALLBACK_WORDS = [
+      "散歩", "音楽", "休日", "映画", "喫茶店",
+      "夕焼け", "旅行", "写真", "料理", "友達",
+      "宇宙", "秘密", "朝ごはん", "雨", "海",
+      "本", "夢", "公園", "手紙", "アイス",
+      "電車", "花火", "思い出", "笑顔", "冒険"
+    ];
+
+    const app = document.querySelector("#app");
+    const image = document.querySelector(".gum-image");
+    const wordWindow = document.querySelector("#wordWindow");
+    const status = document.querySelector("#status");
+    let currentWord = document.querySelector("#currentWord");
+    let lastWord = currentWord.textContent;
+    let isSwitching = false;
+    let fallbackIndex = Math.floor(Math.random() * FALLBACK_WORDS.length);
+    let statusTimer;
+
+    image.addEventListener("error", () => {
+      image.classList.add("is-missing");
+      image.removeAttribute("src");
+      fitWord(currentWord);
+    });
+
+    image.addEventListener("load", () => fitWord(currentWord));
+
+    function getFallbackWord() {
+      const word = FALLBACK_WORDS[fallbackIndex % FALLBACK_WORDS.length];
+      fallbackIndex += 1;
+      return word;
+    }
+
+    function extractWord(payload) {
+      if (!payload) return "";
+      if (typeof payload === "string") return payload;
+      if (Array.isArray(payload)) return extractWord(payload[0]);
+      return payload.word || payload.vocab || payload.term || payload.japanese || "";
+    }
+
+    async function fetchWord() {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(WORD_API_URL, {
+          signal: controller.signal,
+          headers: { "Accept": "application/json" },
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error(`API ${response.status}`);
+
+        const word = extractWord(await response.json()).trim();
+        if (!word) throw new Error("Empty word");
+        return { word, source: "api" };
+      } catch (error) {
+        return { word: getFallbackWord(), source: "fallback" };
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+
+    function showStatus(source) {
+      window.clearTimeout(statusTimer);
+      status.classList.toggle("is-visible", source === "fallback");
+      statusTimer = window.setTimeout(() => status.classList.remove("is-visible"), 1200);
+    }
+
+    function fitWord(element) {
+      const max = Math.min(76, Math.max(28, wordWindow.clientHeight * 0.76));
+      let low = 18;
+      let high = max;
+
+      element.style.fontSize = `${max}px`;
+      for (let i = 0; i < 9; i += 1) {
+        const mid = (low + high) / 2;
+        element.style.fontSize = `${mid}px`;
+        if (element.scrollWidth <= wordWindow.clientWidth && element.scrollHeight <= wordWindow.clientHeight) {
+          low = mid;
+        } else {
+          high = mid;
+        }
+      }
+      element.style.fontSize = `${Math.floor(low)}px`;
+    }
+
+    function switchWord(nextWord) {
+      const oldWord = currentWord;
+      const newWord = document.createElement("span");
+      newWord.className = "word is-in";
+      newWord.textContent = nextWord;
+      wordWindow.appendChild(newWord);
+      fitWord(newWord);
+
+      oldWord.classList.add("is-out");
+      currentWord = newWord;
+      lastWord = nextWord;
+
+      window.setTimeout(() => {
+        oldWord.remove();
+        newWord.classList.remove("is-in");
+        isSwitching = false;
+      }, 280);
+    }
+
+    async function nextWord() {
+      if (isSwitching) return;
+      isSwitching = true;
+
+      const result = await fetchWord();
+      const next = result.word === lastWord ? getFallbackWord() : result.word;
+      showStatus(result.source);
+      switchWord(next);
+    }
+
+    app.addEventListener("pointerup", nextWord);
+    window.addEventListener("resize", () => fitWord(currentWord));
+    new ResizeObserver(() => fitWord(currentWord)).observe(wordWindow);
+
+    fitWord(currentWord);
+    nextWord();
+  </script>
+</body>
+</html>
