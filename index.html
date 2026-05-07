@@ -218,12 +218,14 @@
   <script>
     const WORD_API_URL = "https://jlpt-vocab-api.vercel.app/api/words/random";
     const REQUEST_TIMEOUT_MS = 4500;
+    const MAX_NOUN_FETCH_ATTEMPTS = 5;
     const FALLBACK_WORDS = [
       "散歩", "音楽", "休日", "映画", "喫茶店",
       "夕焼け", "旅行", "写真", "料理", "友達",
       "宇宙", "秘密", "朝ごはん", "雨", "海",
       "本", "夢", "公園", "手紙", "アイス",
-      "電車", "花火", "思い出", "笑顔", "冒険"
+      "電車", "花火", "思い出", "図書館", "冒険",
+      "学校", "時計", "空", "財布", "お土産"
     ];
 
     const app = document.querySelector("#app");
@@ -257,7 +259,17 @@
       return payload.word || payload.vocab || payload.term || payload.japanese || "";
     }
 
-    async function fetchWord() {
+    function extractPartOfSpeech(payload) {
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) return "";
+      return payload.part_of_speech || payload.partOfSpeech || payload.pos || payload.type || payload.word_type || "";
+    }
+
+    function isNounPartOfSpeech(partOfSpeech) {
+      const value = String(partOfSpeech).toLowerCase();
+      return value.includes("noun") || value.includes("名詞") || value === "n";
+    }
+
+    async function fetchRandomWordPayload() {
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -268,14 +280,36 @@
           cache: "no-store"
         });
         if (!response.ok) throw new Error(`API ${response.status}`);
-
-        const word = extractWord(await response.json()).trim();
-        if (!word) throw new Error("Empty word");
-        return { word, source: "api" };
-      } catch (error) {
-        return { word: getFallbackWord(), source: "fallback" };
+        return await response.json();
       } finally {
         window.clearTimeout(timeout);
+      }
+    }
+
+    async function fetchWord() {
+      let latestWord = "";
+
+      try {
+        for (let attempt = 0; attempt < MAX_NOUN_FETCH_ATTEMPTS; attempt += 1) {
+          const payload = await fetchRandomWordPayload();
+          const word = extractWord(payload).trim();
+          if (!word) continue;
+
+          latestWord = word;
+          const partOfSpeech = extractPartOfSpeech(payload);
+
+          // API側に品詞情報がないため完全な名詞絞り込み不可。
+          if (!partOfSpeech || isNounPartOfSpeech(partOfSpeech)) {
+            return { word, source: "api" };
+          }
+        }
+
+        if (latestWord) {
+          return { word: latestWord, source: "api" };
+        }
+        throw new Error("Empty word");
+      } catch (error) {
+        return { word: getFallbackWord(), source: "fallback" };
       }
     }
 
